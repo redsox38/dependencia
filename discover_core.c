@@ -17,10 +17,35 @@
  *
  */
 
+#define SYSLOG_NAMES
 
 #include "config.h"
 #include <stdio.h>
 #include <signal.h>
+
+/* 
+   local termination handler for this file 
+   called by registered term handler after
+   the registered termination handlers for the
+   other components have been called
+*/
+void core_term_handler()
+{
+  unlink(PIDFILE);
+  closelog();
+  exit(0);
+}
+
+/* 
+   registered signal handler
+   calls termination handler function for
+   all of the other files/libraries
+*/
+void term_handler(int signum)
+{
+  syslog(LOG_DEBUG, "Term handler fired");
+  core_term_handler();
+}
 
 /* display help message */
 void usage() 
@@ -32,6 +57,29 @@ void usage()
 }
 
 int main(int argc, char *argv[]) {
+  char               *facil_str;
+  int                facil = -1;
+  CODE               *cs;
+
+  /* install signal handler(s) */
+  if (signal(SIGTERM, term_handler) == SIG_IGN)
+    signal(SIGTERM, SIG_IGN);
+
+  /* open syslog */
+  facil_str = "local7";
+  for(cs = facilitynames; cs->c_name; cs++) {
+    if (!(strcmp(facil_str, cs->c_name))) {
+      facil = cs->c_val;
+      break;
+    }
+  }
+
+  if (facil < 0) {
+    fprintf(stderr, "Invalid syslog facility");
+    exit(-1);
+  }
+
+  openlog("dependencia", LOG_PID, facil);
 
   /* invoke term handler */
   kill(0, SIGTERM);

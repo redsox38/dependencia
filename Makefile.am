@@ -8,7 +8,7 @@ CPPFLAGS = @CPPFLAGS@ -I./include -DCONFIG_FILE="\"@sysconfdir@/dependencia_conf
 LDFLAGS = @LDFLAGS@
 #SUBDIRS = database 
 AUTOMAKE_OPTIONS = no-dependencies
-dependencia_discover_CPPFLAGS = @CPPFLAGS@ -DPIDFILE="\"@localstatedir@/run/dependencia.pid\""
+dependencia_CPPFLAGS = @CPPFLAGS@ -DPIDFILE="\"@localstatedir@/run/dependencia.pid\""
 EXTRA_DIST = dependencia.spec install-sh
 
 install-data-hook:
