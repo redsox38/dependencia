@@ -23,6 +23,16 @@
 #include <stdio.h>
 #include <signal.h>
 
+/* array of command line options */
+static struct option long_options[] = {
+  {"configfile", 1, 0, 'c'},
+  {"interface", 1, 0, 'i'},
+  {"readfile", 1, 0, 'r'},
+  {0,0,0,0}
+};
+
+char *dev = NULL, *readfile = NULL, *configfile = NULL;
+
 /* 
    local termination handler for this file 
    called by registered term handler after
@@ -31,6 +41,15 @@
 */
 void core_term_handler()
 {
+  if (dev)
+    free(dev);
+  
+  if (readfile)
+    free(readfile);
+
+  if (configfile)
+    free(configfile);
+
   unlink(PIDFILE);
   closelog();
   exit(0);
@@ -58,8 +77,31 @@ void usage()
 
 int main(int argc, char *argv[]) {
   char               *facil_str;
-  int                facil = -1;
+  int                facil = -1, c, option_index;
   CODE               *cs;
+  extern char        *optarg;
+  extern int         optind, optopt, opterr;
+
+  /* process command line */
+
+  while ((c = getopt_long(argc, argv, "i:r:c:", long_options, 
+                          &option_index)) != -1) {
+    switch (c) {
+    case 'c':
+      configfile = strdup(optarg);
+      break;
+    case 'i':
+      dev = strdup(optarg);
+      break;
+    case 'r':
+      readfile = strdup(optarg);
+      break;
+    case '?':
+      usage();
+      exit(-1);
+      break;
+    }
+  }
 
   /* install signal handler(s) */
   if (signal(SIGTERM, term_handler) == SIG_IGN)
