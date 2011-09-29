@@ -22,6 +22,9 @@
 #include "config.h"
 #include <stdio.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <getopt.h>
 
 /* array of command line options */
 static struct option long_options[] = {
@@ -75,6 +78,38 @@ void usage()
   fprintf(stderr, "\t-r, --readfile <packet capture file>\n");
 }
 
+void set_pidfile(char *pid_file_name)
+{
+   int  pid, fd;
+   char pidbuf[16];
+   ssize_t bytes;
+
+   if ((fd = open(pid_file_name, O_RDWR|O_CREAT, S_IRUSR|S_IRGRP|S_IROTH)) >= 0){
+     pid = getpid();   
+     memset((void *)pidbuf, 0x0, sizeof(pidbuf));
+     snprintf(pidbuf, sizeof(pidbuf), "%d\n", pid);
+     bytes = write(fd, pidbuf, strlen(pidbuf));
+     close(fd);
+   } else {
+     fprintf(stderr, "Couldn't open %s, aborting.\n", pid_file_name);
+     exit(-1);
+   }
+}
+
+/* function to become daemon */
+void disconnect_from_tty()
+{
+  int tt;
+  
+  if ((tt = open("/dev/tty", 2)) >= 0) {
+    ioctl(tt, TIOCNOTTY, (char *)0);
+    close(tt);
+  }
+  close(0);
+  close(1);
+  close(2);
+}
+
 int main(int argc, char *argv[]) {
   char               *facil_str;
   int                facil = -1, c, option_index;
@@ -122,6 +157,21 @@ int main(int argc, char *argv[]) {
   }
 
   openlog("dependencia", LOG_PID, facil);
+
+  /* close stdin/stdout/stderr and tell tty we are not a tty */
+  disconnect_from_tty();
+
+  /* 
+     parent terminates and child continues 
+     so that we do not regain a controlling tty and 
+     happily run in the background
+  */
+  if (fork()){
+    exit(0);
+  }
+
+  /* ceate pid file */
+  set_pidfile(PIDFILE);
 
   /* invoke term handler */
   kill(0, SIGTERM);
