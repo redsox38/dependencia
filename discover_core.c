@@ -26,6 +26,19 @@
 #include <fcntl.h>
 #include <getopt.h>
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+
 /* array of command line options */
 static struct option long_options[] = {
   {"configfile", 1, 0, 'c'},
@@ -172,6 +185,27 @@ int main(int argc, char *argv[]) {
 
   /* ceate pid file */
   set_pidfile(PIDFILE);
+
+  /* 
+     start pcap from live interface or pcap file depending on 
+     command line settings
+  */
+
+  if (dev) {
+    if (init_packet_capture_live(dev) < 0) {
+      exit(-1);
+    }
+  } else  if (readfile) {
+    if (init_packet_capture_from_file(readfile) < 0) {
+      exit(-1);
+    }
+  }
+  
+  /* 
+     loop reading packets.  If run from a live interface, 
+     this function will never return     
+  */
+  run_packet_capture();
 
   /* invoke term handler */
   kill(0, SIGTERM);

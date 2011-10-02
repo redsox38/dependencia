@@ -2,7 +2,7 @@ DEFS = @DEFS@
 
 sbin_PROGRAMS = dependencia
 
-dependencia_SOURCES = discover_core.c
+dependencia_SOURCES = discover_core.c packet.c
 
 CPPFLAGS = @CPPFLAGS@ -I./include -DCONFIG_FILE="\"@sysconfdir@/dependencia_config.xml\""
 LDFLAGS = @LDFLAGS@
